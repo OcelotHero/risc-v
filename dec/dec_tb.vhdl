@@ -25,7 +25,7 @@ architecture behav of dec_tb is
 begin
   
   dut:
-    entity work.dec(behav)
+    entity work.dec(behav2)
       generic map(DATA_WIDTH => DATA_WIDTH, ADDR_WIDTH => ADDR_WIDTH)
       port map( ir => ir_dc, 
                 rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
@@ -40,35 +40,340 @@ begin
 
   test:
     process is
+    procedure assert_signals(
+      instr: in string; alu_mode: in std_logic_vector(3 downto 0); mem_mode: in std_logic_vector(3 downto 0);
+      rs1_addr: in natural; rs2_addr: in natural; rd_addr: in natural; imm: in std_logic_vector(DATA_WIDTH-1 downto 0);
+      imm_to_alu: in std_logic; sel_bta: in std_logic; illegal: in std_logic) is
+    begin
+      assert alu_mode_dc_u = alu_mode report instr & ": alu_mode incorrect" severity error;
+      assert unsigned(rs1_addr_dc_u) = rs1_addr report instr & ": rs1_addr incorrect" severity error;
+      assert unsigned(rs2_addr_dc_u) = rs2_addr report instr & ": rs2_addr incorrect" severity error;
+      assert unsigned(rd_addr_dc_u) = rd_addr report instr & ": rd_addr incorrect" severity error;
+      assert imm_dc_u = imm report instr & ": imm incorrect" severity error;
+      assert mem_mode_dc_u = mem_mode report instr & ": mem_mode incorrect" severity error;
+      assert imm_to_alu_dc_u = imm_to_alu report instr & ": imm_to_alu incorrect" severity error;
+      assert sel_bta_dc_u = sel_bta report instr & ": sel_bta incorrect" severity error;
+      assert illegal_dc_u = illegal report instr & ": illegal incorrect" severity error;
+    end procedure assert_signals;
+    variable imm: std_logic_vector(DATA_WIDTH-1 downto 0);
   begin
-
+    -- Initialize inputs
     rd_addr_me <= (others => '0'); rd_addr_ex <= (others => '0');
     mem_mode_ex <= (others => '0'); dtba_valid_ex_u <= '0';
 
-    -- R-type ADD
-    ir_dc <= "0000000" & "00010" & "00011" & "000" & "00001" & "0110011"; -- ADD x1, x2, x3
-    wait for 10 ns;
-    assert alu_mode_dc_u = "0000" report "R-type ADD: alu_mode incorrect" severity error;
-    assert rs1_addr_dc_u = "00011" report "R-type ADD: rs1_addr incorrect" severity error;
-    assert rs2_addr_dc_u = "00010" report "R-type ADD: rs2_addr incorrect" severity error;
-    assert rd_addr_dc_u = "00001" report "R-type ADD: rd_addr incorrect" severity error;
-    assert unsigned(imm_dc_u) = 0 report "R-type ADD: imm incorrect" severity error;
-    assert mem_mode_dc_u = "1111" report "R-type ADD: mem_mode incorrect" severity error;
-    assert imm_to_alu_dc_u = '0' report "R-type ADD: imm_to_alu incorrect" severity error;
-    assert sel_bta_dc_u = '0' report "R-type ADD: sel_bta incorrect" severity error;
-    assert illegal_dc_u = '0' report "R-type ADD: illegal incorrect" severity error;
+    -- Valid instructions check
+    ir_dc <= (others => '0');
+    imm := (others => '0');
+    for i in 0 to 2**7-1 loop
+      ir_dc(6 downto 0) <= std_logic_vector(to_unsigned(i, 7));
+      wait for 10 ps;
+      if (i = 2#0110111# or i = 2#0010111# or i = 2#1101111# or i = 2#1100011# or i = 2#0110011#
+          or i = 2#0000011# or i = 2#0010011# or i = 2#1100111# or i = 2#0100011#) then
+        assert illegal_dc_u = '0' report "Opcode=" & to_string(to_unsigned(i, 7)) & ": illegal incorrectly set" severity error;
+      else
+        assert_signals("Opcode=" & to_string(to_unsigned(i, 7)), "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      end if;
+    end loop;
 
-    ir_dc <= "0000000" & "00110" & "01010" & "000" & "00011" & "0110011"; -- ADD x3, x10, x6
-    wait for 10 ns;
-    assert alu_mode_dc_u = "0000" report "R-type ADD: alu_mode incorrect" severity error;
-    assert rs1_addr_dc_u = "01010" report "R-type ADD: rs1_addr incorrect" severity error;
-    assert rs2_addr_dc_u = "00110" report "R-type ADD: rs2_addr incorrect" severity error;
-    assert rd_addr_dc_u = "00011" report "R-type ADD: rd_addr incorrect" severity error;
-    assert unsigned(imm_dc_u) = 0 report "R-type ADD: imm incorrect" severity error;
-    assert mem_mode_dc_u = "1111" report "R-type ADD: mem_mode incorrect" severity error;
-    assert imm_to_alu_dc_u = '0' report "R-type ADD: imm_to_alu incorrect" severity error;
-    assert sel_bta_dc_u = '0' report "R-type ADD: sel_bta incorrect" severity error;
-    assert illegal_dc_u = '0' report "R-type ADD: illegal incorrect" severity error;
+    ---------------- U-type
+    ir_dc(6 downto 0) <= "0110111"; -- LUI
+    wait for 10 ps;
+    assert_signals("U-type LUI", "0000", "1111", 0, 0, 0, imm, '1', '0', '0');
+
+    imm := (others => '0');
+    for i in 1 to 2**20-1 loop
+      ir_dc(31 downto 12) <= std_logic_vector(to_unsigned(i, 20));
+      imm(31 downto 12) := std_logic_vector(to_unsigned(i, 20));
+      wait for 10 ps;
+      assert_signals("U-type LUI", "0000", "1111", 0, 0, 0, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc(31 downto 12) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(i, 5));
+      wait for 10 ps;
+      assert_signals("U-type LUI", "0000", "1111", 0, 0, i, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "0010111"; -- AUIPC
+    wait for 10 ps;
+    assert_signals("U-type AUIPC", "0000", "1111", 0, 0, 0, imm, '1', '1', '0');
+
+    imm := (others => '0');
+    for i in 1 to 2**20-1 loop
+      ir_dc(31 downto 12) <= std_logic_vector(to_unsigned(i, 20));
+      wait for 10 ps;
+      imm(31 downto 12) := std_logic_vector(to_unsigned(i, 20));
+      assert_signals("U-type AUIPC", "0000", "1111", 0, 0, 0, imm, '1', '1', '0');
+    end loop;
+
+    ir_dc(31 downto 12) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(i, 5));
+      wait for 10 ps;
+      assert_signals("U-type AUIPC", "0000", "1111", 0, 0, i, imm, '1', '1', '0');
+    end loop;
+
+    ---------------- J-type
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "1101111"; -- JAL
+    wait for 10 ps;
+    assert_signals("J-type JAL", "0000", "1111", 0, 0, 0, imm, '0', '1', '0');
+
+    for i in 1 to 2**20-1 loop
+      ir_dc(31 downto 12) <= std_logic_vector(to_unsigned(i, 20));
+      wait for 10 ps;
+      imm := (others => ir_dc(31));
+      imm(10 downto 1) := ir_dc(30 downto 21);
+      imm(11) := ir_dc(20);
+      imm(19 downto 12) := ir_dc(19 downto 12);
+      imm(0) := '0';
+      assert_signals("J-type JAL", "0000", "1111", 0, 0, 0, imm, '0', '1', '0');
+    end loop;
+
+    ir_dc(31 downto 12) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(i, 5));
+      wait for 10 ps;
+      assert_signals("J-type JAL", "0000", "1111", 0, 0, i, imm, '0', '1', '0');
+    end loop;
+
+    ---------------- B-type
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "1100011";
+    wait for 10 ps;
+    assert_signals("B-type", "1001", "1111", 0, 0, 0, imm, '0', '1', '0');
+
+    for i in 1 to 2**12-1 loop
+      imm := std_logic_vector(to_unsigned(i, 32));
+      ir_dc(31 downto 25) <= imm(11 downto 5);
+      ir_dc(11 downto 7) <= imm(4 downto 0);
+      wait for 10 ps;
+      imm := (others => ir_dc(31));
+      imm(11) := ir_dc(7);
+      imm(10 downto 5) := ir_dc(30 downto 25);
+      imm(4 downto 1) := ir_dc(11 downto 8);
+      imm(0) := '0';
+      assert_signals("B-type", "1001", "1111", 0, 0, 0, imm, '0', '1', '0');
+    end loop;
+
+    ir_dc(31 downto 25) <= (others => '0');
+    ir_dc(11 downto 7) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      if i = 2 or i = 3 then
+        assert_signals("B-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      else
+        assert_signals("B-type", '1' & ir_dc(12) & ir_dc(14 downto 13), "1111", 0, 0, 0, imm, '0', '1', '0');
+      end if;
+    end loop;
+
+    ir_dc(14 downto 12) <= (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(19 downto 15) <= std_logic_vector(to_unsigned(i, 5));
+      ir_dc(24 downto 20) <= std_logic_vector(to_unsigned(31-i, 5));
+      wait for 10 ps;
+      assert_signals("B-type", "1001", "1111", i, 31-i, 0, imm, '0', '1', '0');
+    end loop;
+
+    ---------------- S-type
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "0100011";
+    wait for 10 ps;
+    assert_signals("S-type", "0000", "1000", 0, 0, 0, imm, '1', '0', '0');
+
+    for i in 1 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      if i = 1 or i = 2 then
+        assert_signals("S-type", "0000", "1" & std_logic_vector(to_unsigned(i, 3)), 0, 0, 0, imm, '1', '0', '0');
+      else
+        assert_signals("S-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      end if;
+    end loop;
+
+    ir_dc(14 downto 12) <= (others => '0');
+    for i in 1 to 2**12-1 loop
+      imm := std_logic_vector(to_unsigned(i, 32));
+      ir_dc(31 downto 25) <= imm(11 downto 5);
+      ir_dc(11 downto 7) <= imm(4 downto 0);
+      wait for 10 ps;
+      imm(imm'high downto 12) := (others => ir_dc(31));
+      assert_signals("S-type", "0000", "1000", 0, 0, 0, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc(31 downto 25) <= (others => '0');
+    ir_dc(11 downto 7) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(19 downto 15) <= std_logic_vector(to_unsigned(i, 5));
+      ir_dc(24 downto 20) <= std_logic_vector(to_unsigned(31-i, 5));
+      wait for 10 ps;
+      assert_signals("S-type", "0000", "1000", i, 31-i, 0, imm, '1', '0', '0');
+    end loop;
+
+    ---------------- R-type
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "0110011";
+    wait for 10 ps;
+    assert_signals("R-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '0');
+
+    for i in 1 to 31 loop
+      ir_dc(19 downto 15) <= std_logic_vector(to_unsigned(i, 5));
+      ir_dc(24 downto 20) <= std_logic_vector(to_unsigned(31-i, 5));
+      wait for 10 ps;
+      assert_signals("R-type", "0000", "1111", i, 31-i, 0, imm, '0', '0', '0');
+    end loop;
+
+    ir_dc(19 downto 15) <= (others => '0');
+    ir_dc(24 downto 20) <= (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(i, 5));
+      wait for 10 ps;
+      assert_signals("R-type", "0000", "1111", 0, 0, i, imm, '0', '0', '0');
+    end loop;
+
+    ir_dc(11 downto 7) <= (others => '0');
+    for i in 1 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      assert_signals("R-type", "0" & ir_dc(14 downto 12), "1111", 0, 0, 0, imm, '0', '0', '0');
+    end loop;
+
+    ir_dc(14 downto 12) <= (others => '0');
+    ir_dc(30) <= '1';
+    for i in 0 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      if i = 0 or i = 5 then
+        assert_signals("R-type", "1" & ir_dc(14 downto 12), "1111", 0, 0, 0, imm, '0', '0', '0');
+      else
+        assert_signals("R-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      end if;
+    end loop;
+
+    ---------------- I-type
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "0000011"; -- Load
+    for i in 0 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      if i < 3 or i = 4 or i = 5 then
+        assert_signals("I-type Load", "0000", "0" & std_logic_vector(to_unsigned(i, 3)), 0, 0, 0, imm, '1', '0', '0');
+      else
+        assert_signals("I-type Load", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      end if;
+    end loop;
+
+    ir_dc(14 downto 12) <= (others => '0');
+    for i in 1 to 2**12-1 loop
+      imm := std_logic_vector(to_unsigned(i, 32));
+      ir_dc(31 downto 20) <= imm(11 downto 0);
+      wait for 10 ps;
+      imm(imm'high downto 12) := (others => ir_dc(31));
+      assert_signals("I-type Load", "0000", "0000", 0, 0, 0, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc(31 downto 20) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(19 downto 15) <= std_logic_vector(to_unsigned(i, 5));
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(31-i, 5));
+      wait for 10 ps;
+      assert_signals("I-type Load", "0000", "0000", i, 0, 31-i, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "0010011"; -- ALU immediate
+    for i in 0 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      assert_signals("I-type ALU immediate", '0' & ir_dc(14 downto 12), "1111", 0, 0, 0, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc(30) <= '1';
+    for i in 0 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      if i = 1 then
+        imm(10) := '0';
+        assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      elsif i = 5 then
+        imm(10) := '0';
+        assert_signals("I-type ALU immediate", "1101", "1111", 0, 0, 0, imm, '1', '0', '0');
+      else
+        imm(10) := '1';
+        assert_signals("I-type ALU immediate", "0" & ir_dc(14 downto 12), "1111", 0, 0, 0, imm, '1', '0', '0');
+      end if;
+    end loop;
+
+    ir_dc(30) <= '0';
+    ir_dc(14 downto 12) <= "101";
+    for i in 1 to 2**6-1 loop
+      ir_dc(26 downto 20) <= std_logic_vector(to_unsigned(i, 7));
+      wait for 10 ps;
+      if i < DATA_WIDTH then
+        imm := std_logic_vector(to_unsigned(i, 32));
+        assert_signals("I-type ALU immediate", "0101", "1111", 0, 0, 0, imm, '1', '0', '0');
+      else
+        imm := (others => '0');
+        assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      end if;
+    end loop;
+
+    ir_dc(14 downto 12) <= (others => '0');
+    for i in 1 to 2**12-1 loop
+      imm := std_logic_vector(to_unsigned(i, 32));
+      ir_dc(31 downto 20) <= imm(11 downto 0);
+      wait for 10 ps;
+      imm(imm'high downto 12) := (others => ir_dc(31));
+      assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc(31 downto 20) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(19 downto 15) <= std_logic_vector(to_unsigned(i, 5));
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(31-i, 5));
+      wait for 10 ps;
+      assert_signals("I-type ALU immediate", "0000", "1111", i, 0, 31-i, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc <= (others => '0');
+    ir_dc(6 downto 0) <= "1100111"; -- JALR
+    for i in 0 to 7 loop
+      ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
+      wait for 10 ps;
+      if i = 0 then
+        assert_signals("I-type JALR", "0000", "1111", 0, 0, 0, imm, '1', '0', '0');
+      else
+        assert_signals("I-type JALR", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+      end if;
+    end loop;
+
+    ir_dc(14 downto 12) <= (others => '0');
+    for i in 1 to 2**12-1 loop
+      imm := std_logic_vector(to_unsigned(i, 32));
+      ir_dc(31 downto 20) <= imm(11 downto 0);
+      wait for 10 ps;
+      imm(imm'high downto 12) := (others => ir_dc(31));
+      assert_signals("I-type JALR", "0000", "1111", 0, 0, 0, imm, '1', '0', '0');
+    end loop;
+
+    ir_dc(31 downto 20) <= (others => '0');
+    imm := (others => '0');
+    for i in 1 to 31 loop
+      ir_dc(19 downto 15) <= std_logic_vector(to_unsigned(i, 5));
+      ir_dc(11 downto 7) <= std_logic_vector(to_unsigned(31-i, 5));
+      wait for 10 ps;
+      assert_signals("I-type JALR", "0000", "1111", i, 0, 31-i, imm, '1', '0', '0');
+    end loop;
 
     wait;
   end process;

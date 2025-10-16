@@ -15,7 +15,7 @@ begin
 
     if opcode = "0010111" or opcode = "0110111" or opcode = "1101111" then
       -- U-type and J-type
-      rd_addr  <= ir(11 downto 7); imm_to_alu <= '1'; sel_bta <= opcode(6) xnor opcode(5);
+      rd_addr  <= ir(11 downto 7); imm_to_alu <= opcode(4); sel_bta <= opcode(6) xnor opcode(5);
       imm <= ir(31 downto 12) & (11 downto 0 => '0') when opcode /= "1101111" else                -- U-type
              (imm'high downto 20 => ir(31)) & ir(19 downto 12) & ir(20) & ir(30 downto 21) & '0'; -- J-type
     else
@@ -28,7 +28,7 @@ begin
         -- alu_mode <= "0000" when opcode(6) = '0' else "111" & funct3(0) when unsigned(funct3) < 2 else
         --             std_logic_vector(to_unsigned(unsigned(funct3)+5, 4));
         alu_mode <= "0000" when opcode(6) = '0' else "1001" when funct3 = "000" else 
-                    '1' & std_logic_vector(rotate_right(unsigned(alu_mode), 1));
+                    '1' & std_logic_vector(rotate_right(unsigned(funct3), 1));
         mem_mode <= '1' & funct3 when opcode(6) = '0' else (others => '1');
       elsif opcode = "0110011" and (funct7 = "0000000" or (funct7 = "0100000" and (funct3 = "000" or funct3 = "101"))) then
         -- R-type

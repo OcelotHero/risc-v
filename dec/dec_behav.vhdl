@@ -19,7 +19,7 @@ begin
       imm <= ir(31 downto 12) & (11 downto 0 => '0');
     elsif opcode = "1101111" then  
       -- J-type
-      rd_addr  <= ir(11 downto 7); imm_to_alu <= '1'; sel_bta <= '1';
+      rd_addr  <= ir(11 downto 7); sel_bta <= '1';
       imm <= (imm'high downto 20 => ir(31)) & ir(19 downto 12) & ir(20) & ir(30 downto 21) & '0';
     elsif opcode = "1100011" and signed(funct3) < 2 then  
       -- B-type
@@ -27,7 +27,7 @@ begin
       imm <= (imm'high downto 12 => ir(31)) & ir(7) & ir(30 downto 25) & ir(11 downto 8) & '0';
       -- alu_mode <= "111" & funct3(0) when unsigned(funct3) < 2 else
       --             std_logic_vector(to_unsigned(unsigned(funct3)+5, 4));
-      alu_mode <= "1001" when funct3 = "000" else "1" & std_logic_vector(rotate_right(unsigned(alu_mode), 1));
+      alu_mode <= "1001" when funct3 = "000" else "1" & std_logic_vector(rotate_right(unsigned(funct3), 1));
     elsif opcode = "0110011" and (funct7 = "0000000" or (funct7 = "0100000" and (funct3 = "000" or funct3 = "101"))) then   
       -- R-type
       rs1_addr <= ir(19 downto 15); rs2_addr <= ir(24 downto 20); rd_addr <= ir(11 downto 7);
