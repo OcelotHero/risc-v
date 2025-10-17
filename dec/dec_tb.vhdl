@@ -20,14 +20,14 @@ architecture behav of dec_tb is
   signal mem_mode_dc_u:                 std_logic_vector(3 downto 0);
   signal dtba_valid_ex_u:               std_logic;
   signal imm_to_alu_dc_u, sel_bta_dc_u: std_logic;
-  signal sbta_valid_dc_u, stall_dc_u:   std_logic; 
+  signal sbta_valid_dc_u, stall_dc_u:   std_logic;
   signal illegal_dc_u:                  std_logic;
 begin
-  
+
   dut:
     entity work.dec(behav2)
     generic map(DATA_WIDTH => DATA_WIDTH, ADDR_WIDTH => ADDR_WIDTH)
-    port map( ir => ir_dc, 
+    port map( ir => ir_dc,
               rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
               mem_mode_ex => mem_mode_ex, dtba_valid => dtba_valid_ex_u,
               fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,

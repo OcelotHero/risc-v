@@ -15,6 +15,6 @@ begin
   bram:
     entity work.gen_ram_be
     generic map(ADDR_WIDTH => ADDR_WIDTH, NUM_BYTES => DATA_WIDTH/8, BYTE_WIDTH => 8)
-    port map( clk => clk, be => be, 
+    port map( clk => clk, be => be,
               raddr => raddr, waddr => waddr, rdata => rdata, wdata => wdata);
 end architecture struct;

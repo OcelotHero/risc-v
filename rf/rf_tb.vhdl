@@ -24,7 +24,7 @@ begin
   dut:
     entity work.rf
     generic map(ADDR_WIDTH => ADDR_WIDTH, DATA_WIDTH => DATA_WIDTH)
-    port map( clk => clk, rs1 => rs1, rs2 => rs2, rd => rd, 
+    port map( clk => clk, rs1 => rs1, rs2 => rs2, rd => rd,
               rs1_addr => rs1_addr, rs2_addr => rs2_addr, rd_addr => rd_addr);
 
   test: process
@@ -48,9 +48,9 @@ begin
       rs1_addr <= std_logic_vector(to_unsigned(i, ADDR_WIDTH));
       rs2_addr <= std_logic_vector(to_unsigned(i, ADDR_WIDTH));
       wait for 10 ns;
-      assert rs1 = std_logic_vector(to_unsigned(i*16#1111#, DATA_WIDTH)) 
+      assert rs1 = std_logic_vector(to_unsigned(i*16#1111#, DATA_WIDTH))
         report "Write/readback failed for rs1" severity error;
-      assert rs2 = std_logic_vector(to_unsigned(i*16#1111#, DATA_WIDTH)) 
+      assert rs2 = std_logic_vector(to_unsigned(i*16#1111#, DATA_WIDTH))
         report "Write/readback failed for rs2" severity error;
     end loop;
 

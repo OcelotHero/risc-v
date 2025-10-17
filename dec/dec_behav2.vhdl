@@ -27,7 +27,7 @@ begin
                (imm'high downto 12 => ir(31)) & ir(7) & ir(30 downto 25) & ir(11 downto 8) & '0';             -- B-type
         -- alu_mode <= "0000" when opcode(6) = '0' else "111" & funct3(0) when unsigned(funct3) < 2 else
         --             std_logic_vector(to_unsigned(unsigned(funct3)+5, 4));
-        alu_mode <= "0000" when opcode(6) = '0' else "1001" when funct3 = "000" else 
+        alu_mode <= "0000" when opcode(6) = '0' else "1001" when funct3 = "000" else
                     '1' & std_logic_vector(rotate_right(unsigned(funct3), 1));
         mem_mode <= '1' & funct3 when opcode(6) = '0' else (others => '1');
       elsif opcode = "0110011" and (funct7 = "0000000" or (funct7 = "0100000" and (funct3 = "000" or funct3 = "101"))) then
@@ -40,7 +40,7 @@ begin
         or (opcode = "1100111" and funct3 = "000") then
         -- I-type
         rd_addr <= ir(11 downto 7); imm_to_alu <= '1';
-        imm <= (imm'high downto 7 => '0') & ir(26 downto 20) when opcode(4) = '1' and funct3(1 downto 0) = "01" else 
+        imm <= (imm'high downto 7 => '0') & ir(26 downto 20) when opcode(4) = '1' and funct3(1 downto 0) = "01" else
                (imm'high downto 11 => ir(31)) & ir(30 downto 20);
         alu_mode <= (others => '0') when opcode(4) = '0' else
                     funct7(5) & funct3 when funct3(1 downto 0) = "01" else '0' & funct3;

@@ -1,6 +1,6 @@
 architecture behav of ctrl is
 begin
-  
+
   raddr <= mem_addr(ADDR_WIDTH+1 downto 2);
 
   codec: process(mem_mode, mem_n_addr, mem_sdata, rdata)
@@ -28,9 +28,9 @@ begin
       else
         width := 16 when mem_mode(0) = '1' else 8;
         factor := to_integer(unsigned(mem_n_addr(1 downto 0)))/2 when mem_mode(0) = '1' else        -- LH
-                  to_integer(unsigned(mem_n_addr(1 downto 0)));                                     -- LB  
+                  to_integer(unsigned(mem_n_addr(1 downto 0)));                                     -- LB
         mem_ldata <= rdata when mem_mode(1) = '1' else                                              -- LW
-                     (mem_ldata'high downto width => rdata(width*(factor+1)-1) and not mem_mode(2)) 
+                     (mem_ldata'high downto width => rdata(width*(factor+1)-1) and not mem_mode(2))
                         & rdata(width*(factor+1)-1 downto width*factor);
       end if;
     end if;

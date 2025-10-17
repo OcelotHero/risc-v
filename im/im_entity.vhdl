@@ -8,8 +8,8 @@ package test is
 
     type mem_0_t is array(0 to 2**ADDR_WIDTH-1) of std_logic_vector(31 downto 0);
     constant mem_0 : mem_0_t := (
-        X"93024006", X"13030000", X"b3035300", X"9382f2ff",  
-        X"b3835300" 
+        X"93024006", X"13030000", X"b3035300", X"9382f2ff",
+        X"b3835300"
     );
 end test;
 
