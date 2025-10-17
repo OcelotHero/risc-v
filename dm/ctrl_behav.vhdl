@@ -15,7 +15,7 @@ begin
         illegal_op <= '1';
       else
         waddr <= mem_n_addr(ADDR_WIDTH+1 downto 2);
-        wdata <= mem_sdata;
+        wdata <= std_logic_vector(shift_left(unsigned(mem_sdata), 8*to_integer(unsigned(mem_n_addr(1 downto 0)))));
         be <= "1111" when mem_mode(1) = '1' else                                                  -- SW
               "0011" when mem_mode(0) = '1' and mem_n_addr(1) = '0' else                          -- SH
               "1100" when mem_mode(0) = '1' and mem_n_addr(1) = '1' else

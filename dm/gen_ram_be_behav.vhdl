@@ -7,7 +7,7 @@ architecture behav of gen_ram_be is
 
   signal ram       : ram_type := (others => (others => (others => '0')));
   signal rdata_int : word_type;
-  signal raddr_reg : std_logic_vector(ADDR_WIDTH - 1 downto 0);
+  signal raddr_reg : std_logic_vector(ADDR_WIDTH - 1 downto 0) := (others => '0');
 begin
 
 	ram_read_p: process(ram, raddr_reg) is
@@ -25,7 +25,7 @@ begin
           ram(to_integer(unsigned(waddr)))(i) <= wdata(((i + 1) * BYTE_WIDTH - 1) downto i * BYTE_WIDTH);
         end if;
       end loop;
-    raddr_reg <= raddr;
+      raddr_reg <= raddr;
     end if;
   end process ram_write_p;
 end behav;
