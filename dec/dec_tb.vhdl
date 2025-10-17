@@ -26,20 +26,19 @@ begin
   
   dut:
     entity work.dec(behav2)
-      generic map(DATA_WIDTH => DATA_WIDTH, ADDR_WIDTH => ADDR_WIDTH)
-      port map( ir => ir_dc, 
-                rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
-                mem_mode_ex => mem_mode_ex, dtba_valid => dtba_valid_ex_u,
-                fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
-                rs1_addr => rs1_addr_dc_u, rs2_addr => rs2_addr_dc_u, rd_addr => rd_addr_dc_u,
-                imm => imm_dc_u,
-                alu_mode => alu_mode_dc_u, mem_mode => mem_mode_dc_u,
-                imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
-                sbta_valid => sbta_valid_dc_u, stall => stall_dc_u,
-                illegal => illegal_dc_u);
+    generic map(DATA_WIDTH => DATA_WIDTH, ADDR_WIDTH => ADDR_WIDTH)
+    port map( ir => ir_dc, 
+              rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
+              mem_mode_ex => mem_mode_ex, dtba_valid => dtba_valid_ex_u,
+              fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
+              rs1_addr => rs1_addr_dc_u, rs2_addr => rs2_addr_dc_u, rd_addr => rd_addr_dc_u,
+              imm => imm_dc_u,
+              alu_mode => alu_mode_dc_u, mem_mode => mem_mode_dc_u,
+              imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
+              sbta_valid => sbta_valid_dc_u, stall => stall_dc_u,
+              illegal => illegal_dc_u);
 
-  test:
-    process is
+  test: process is
     procedure assert_signals(
       instr: in string; alu_mode: in std_logic_vector(3 downto 0); mem_mode: in std_logic_vector(3 downto 0);
       rs1_addr: in natural; rs2_addr: in natural; rd_addr: in natural; imm: in std_logic_vector(DATA_WIDTH-1 downto 0);
@@ -55,7 +54,9 @@ begin
       assert sel_bta_dc_u = sel_bta report instr & ": sel_bta incorrect" severity error;
       assert illegal_dc_u = illegal report instr & ": illegal incorrect" severity error;
     end procedure assert_signals;
+
     variable imm: std_logic_vector(DATA_WIDTH-1 downto 0);
+
   begin
     -- Initialize inputs
     rd_addr_me <= (others => '0'); rd_addr_ex <= (others => '0');

@@ -17,8 +17,8 @@ begin
     entity work.alu
     generic map(DATA_WIDTH => DATA_WIDTH)
     port map(rs1 => rs1, rs2 => rs2, alu_mode => alu_mode, rd => rd, logical => logical);
-  test:
-    process is
+    
+  test: process
   begin
     rs1 <= x"F000_0011";
     rs2 <= x"0000_0005";
