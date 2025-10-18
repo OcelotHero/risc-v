@@ -5,10 +5,11 @@ begin
   fwd_rs1(1) <= '1' when rd_addr_me /= "00000" and rd_addr_me = ir(19 downto 15) else '0';
   fwd_rs2(0) <= '1' when rd_addr_ex /= "00000" and rd_addr_ex = ir(24 downto 20) else '0';
   fwd_rs2(1) <= '1' when rd_addr_me /= "00000" and rd_addr_me = ir(24 downto 20) else '0';
-  fwd_selsd <= '1' when ir(6 downto 0) = "0100011" and mem_mode_ex(2) = '0"
+  fwd_selsd <= '1' when ir(6 downto 0) = "0100011" and mem_mode_ex(2) = '0'
                 and rd_addr_ex /= "00000" and rd_addr_ex = ir(24 downto 20) else '0';
-  process(ir, rd_addr_ex, mem_mode_ex)
-  process(ir, rd_addr_ex, rd_addr_me, mem_mode_ex)
+
+  decode: process(ir, rd_addr_ex, mem_mode_ex)
+  -- process(ir, rd_addr_ex, rd_addr_me, mem_mode_ex)
     variable opcode: std_logic_vector(6 downto 0);
     variable funct3: std_logic_vector(2 downto 0);
     variable funct7: std_logic_vector(6 downto 0);
@@ -66,5 +67,5 @@ begin
         illegal <= '1';
       end if;
     end if;
-  end process;
+  end process decode;
 end architecture behav2;
