@@ -4,13 +4,16 @@ architecture behav of rf is
   signal ram: ram_array := (others => (others => '0'));
 begin
 
-  write: process(clk) is
+  write_reset: process(clk) is
   begin
-    if rising_edge(clk) and (or rd_addr /= '0') then
+    if res_n = '0' then
+      ram <= (others => (others => '0'));
+    elsif rising_edge(clk) and (or rd_addr /= '0') then
       ram(to_integer(unsigned(rd_addr))) <= rd;
     end if;
-  end process write;
+  end process write_reset;
 
-  rs1 <= ram(to_integer(unsigned(rs1_addr)));
-  rs2 <= ram(to_integer(unsigned(rs2_addr)));
+  read:
+    rs1 <= ram(to_integer(unsigned(rs1_addr)));
+    rs2 <= ram(to_integer(unsigned(rs2_addr)));
 end architecture behav;

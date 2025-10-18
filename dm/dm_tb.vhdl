@@ -17,15 +17,16 @@ begin
 
   osc:
     entity work.clk_res_gen
-    generic map(T => 10 ns)
-    port map(clk => clk, res_n => res_n);
+    generic map (T => 10 ns)
+    port map (clk => clk, res_n => res_n);
 
   dut:
     entity work.dm
-    generic map(ADDR_WIDTH => ADDR_WIDTH, DATA_WIDTH => DATA_WIDTH)
-    port map( clk => clk, mem_addr => mem_addr_ex, mem_n_addr => mem_addr_me,
-              mem_sdata => mem_sdata_me, mem_ldata => mem_ldata_me,
-              mem_mode => mem_mode_me, illegal_op => illegal_op_me_u);
+    generic map (ADDR_WIDTH => ADDR_WIDTH, DATA_WIDTH => DATA_WIDTH)
+    port map (
+      clk => clk, addr => mem_addr_ex, n_addr => mem_addr_me,
+      sdata => mem_sdata_me, ldata => mem_ldata_me,
+      mode => mem_mode_me, illegal_mode => illegal_op_me_u);
 
   test: process
   begin

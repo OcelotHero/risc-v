@@ -75,7 +75,7 @@ begin
       -- fwd_rs2(1) <= '1' when rd_addr_me /= "00000" and rd_addr_me = ir(24 downto 20) else '0';
       -- fwd_selsd <= '1' when mem_mode_ex(2) = '0' and rd_addr_ex /= "00000" and rd_addr_ex = ir(24 downto 20) else '0';
     else
-      illegal <= '1';
+      illegal <= '1'; imm_to_alu <= '1';
     end if;
   end process decode;
 end architecture behav;

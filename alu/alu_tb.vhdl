@@ -15,8 +15,8 @@ begin
 
   dut:
     entity work.alu
-    generic map(DATA_WIDTH => DATA_WIDTH)
-    port map(rs1 => rs1, rs2 => rs2, alu_mode => alu_mode, rd => rd, logical => logical);
+    generic map (DATA_WIDTH => DATA_WIDTH)
+    port map (rs1 => rs1, rs2 => rs2, alu_mode => alu_mode, rd => rd, logical => logical);
 
   test: process
   begin

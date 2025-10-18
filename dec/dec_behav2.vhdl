@@ -64,7 +64,7 @@ begin
                     funct7(5) & funct3 when funct3(1 downto 0) = "01" else '0' & funct3;
         mem_mode <= '0' & funct3 when opcode = "0000011" else (others => '1');
       else
-        illegal <= '1';
+        illegal <= '1'; imm_to_alu <= '1';
       end if;
     end if;
   end process decode;
