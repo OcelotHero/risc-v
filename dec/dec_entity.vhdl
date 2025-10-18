@@ -9,13 +9,13 @@ entity dec is
         mem_mode_ex:            in  std_logic_vector(3 downto 0);
         fwd_rs1, fwd_rs2:       out std_logic_vector(1 downto 0);
         fwd_selsd:              out std_logic;
-        rs1_addr, rs2_addr:     out std_logic_vector(ADDR_WIDTH-1 downto 0);
+        rs1_addr, rs2_addr:     out std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
         rd_addr:                out std_logic_vector(ADDR_WIDTH-1 downto 0);
         imm:                    out std_logic_vector(DATA_WIDTH-1 downto 0);
         alu_mode:               out std_logic_vector(3 downto 0);
         -- dbpu_mode:              out std_logic_vector(1 downto 0);
         mem_mode:               out std_logic_vector(3 downto 0);
-        dtba_valid:             in std_logic;
+        dbta_valid:             in std_logic;
         imm_to_alu, sel_bta:    out std_logic;
         sbta_valid, stall:      out std_logic;
         illegal:                out std_logic);
