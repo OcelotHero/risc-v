@@ -10,7 +10,7 @@ package im_pkg is
     type mem_0_t is array(0 to 2**PC_DEPTH-1) of std_logic_vector(INSTR_WIDTH-1 downto 0);
     constant mem_0 : mem_0_t := (
         X"93024006", X"13030000", X"B3035300", X"9382F2FF",
-        X"B3835300", others => X"00000013"
+        X"B3835300", others => X"13000000"
     );
 end im_pkg;
 
