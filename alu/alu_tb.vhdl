@@ -81,7 +81,7 @@ begin
     assert logical = '-' report "comp error" severity error;
     assert rd = std_logic_vector(to_unsigned(0, DATA_WIDTH)) report "SLTU failed" severity error;
 
-    alu_mode <= "1001"; -- BLT  -- BEQ
+    alu_mode <= "1001"; -- BEQ
     wait for 10 ns;
     assert logical = '0' report "BEQ error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
@@ -89,7 +89,7 @@ begin
     wait for 10 ns;
     assert logical = '1' report "BEQ error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
-    alu_mode <= "1010"; -- BGE  -- BLT
+    alu_mode <= "1010"; -- BLT
     wait for 10 ns;
     assert logical = '0' report "BLT error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
@@ -97,7 +97,7 @@ begin
     wait for 10 ns;
     assert logical = '1' report "BLT error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
-    alu_mode <= "1011"; -- BLTU -- BLTU
+    alu_mode <= "1011"; -- BLTU
     wait for 10 ns;
     assert logical = '0' report "BLTU error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
@@ -105,7 +105,7 @@ begin
     wait for 10 ns;
     assert logical = '0' report "BLTU error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
-    alu_mode <= "1100"; -- BGEU -- BNE
+    alu_mode <= "1100"; -- BNE
     wait for 10 ns;
     assert logical = '0' report "BNE error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
@@ -113,7 +113,7 @@ begin
     wait for 10 ns;
     assert logical = '1' report "BNE error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
-    alu_mode <= "1110"; -- BEQ  -- BGE
+    alu_mode <= "1110"; -- BGE
     wait for 10 ns;
     assert logical = '0' report "BGE error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
@@ -121,7 +121,7 @@ begin
     wait for 10 ns;
     assert logical = '1' report "BGE error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;
-    alu_mode <= "1111"; -- BNE  -- BGEU
+    alu_mode <= "1111"; -- BGEU
     wait for 10 ns;
     assert logical = '1' report "BGEU error" severity error;
     assert rd = x"----_----" report "undefined failed" severity error;

@@ -9,5 +9,5 @@ entity dm is
         addr, n_addr: in  std_logic_vector(DATA_WIDTH-1 downto 0);
         sdata:        in  std_logic_vector(DATA_WIDTH-1 downto 0);
         ldata:        out std_logic_vector(DATA_WIDTH-1 downto 0);
-        illegal_mode: out std_logic);
+        err_align:    out std_logic);
 end entity dm;

@@ -26,7 +26,7 @@ architecture struct of cpu is
   signal imm_to_alu_dc_u, imm_to_alu_ex:    std_logic;
   signal sbta_valid_dc_u, dbta_valid_ex_u:  std_logic;
   signal stall_dc_u, sel_bta_dc_u:          std_logic;
-  signal illegal_dc_u, illegal_mode_me_u:   std_logic;
+  signal illegal_dc_u, err_align_me_u:      std_logic;
 
 begin
 
@@ -149,7 +149,7 @@ begin
     entity work.dm
     generic map (DATA_WIDTH => DATA_WIDTH, ADDR_WIDTH => DM_ADDR_WIDTH)
     port map (
-      clk => clk, mode => mem_mode_me, illegal_mode => illegal_mode_me_u,
+      clk => clk, mode => mem_mode_me, err_align => err_align_me_u,
       addr => alu_pc_sel_ex_u, n_addr => alu_out_me,
       sdata => sdata_sel_me_u, ldata => ldata_me);
 

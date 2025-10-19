@@ -11,7 +11,7 @@ begin
       addr => addr, n_addr => n_addr,
       sdata => sdata, ldata => ldata,
       raddr => raddr, waddr => waddr, rdata => rdata, wdata => wdata,
-      mode => mode, be => be, illegal_mode => illegal_mode);
+      mode => mode, be => be, err_align => err_align);
 
   bram:
     entity work.gen_ram_be

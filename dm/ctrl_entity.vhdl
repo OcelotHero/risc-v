@@ -12,5 +12,5 @@ entity ctrl is
         be:           out std_logic_vector((DATA_WIDTH/8)-1 downto 0);
         wdata:        out std_logic_vector(DATA_WIDTH-1 downto 0);
         rdata:        in  std_logic_vector(DATA_WIDTH-1 downto 0);
-        illegal_mode: out std_logic);
+        err_align:    out std_logic);
 end entity ctrl;
