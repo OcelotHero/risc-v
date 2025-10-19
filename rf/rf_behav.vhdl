@@ -14,6 +14,8 @@ begin
   end process write_reset;
 
   read:
-    rs1 <= ram(to_integer(unsigned(rs1_addr)));
-    rs2 <= ram(to_integer(unsigned(rs2_addr)));
+    rs1 <= rd when rd_addr /= "00000" and rd_addr = rs1_addr else
+           ram(to_integer(unsigned(rs1_addr)));
+    rs2 <= rd when rd_addr /= "00000" and rd_addr = rs2_addr else
+           ram(to_integer(unsigned(rs2_addr)));
 end architecture behav;

@@ -21,7 +21,7 @@ architecture struct of cpu is
   signal fwd_rs1_ex, fwd_rs2_ex:            std_logic_vector(1 downto 0);
   signal fwd_selsd_dc_u:                    std_logic;
   signal fwd_selsd_ex, fwd_selsd_me:        std_logic;
-  signal alu_comp_out_ex_u, sel_pc_ex_u:    std_logic;
+  signal alu_comp_out_ex_u, sel_pc_ex_u:    std_logic := '0';
   signal imm_to_alu_dc_u, imm_to_alu_ex:    std_logic;
   signal sbta_valid_dc_u, dbta_valid_ex_u:  std_logic;
   signal stall_dc_u, sel_bta_dc_u:          std_logic;
