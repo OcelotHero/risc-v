@@ -8,7 +8,7 @@ begin
   fwd_selsd <= '1' when ir(6 downto 0) = "0100011" and mem_mode_ex(2) = '0'
                 and rd_addr_ex /= "00000" and rd_addr_ex = ir(24 downto 20) else '0';
 
-  decode: process(ir, rd_addr_ex, mem_mode_ex)
+  decode: process(ir, rd_addr_ex, mem_mode_ex, dbta_valid)
   -- process(ir, rd_addr_ex, rd_addr_me, mem_mode_ex)
     variable opcode: std_logic_vector(6 downto 0);
     variable funct3: std_logic_vector(2 downto 0);
@@ -20,8 +20,11 @@ begin
     rs1_addr <= (others => '0'); rs2_addr <= (others => '0'); rd_addr <= (others => '0');
     imm <= (others => '0'); alu_mode <= (others => '0'); mem_mode <= (others => '1');
     imm_to_alu <= '0'; sel_bta <= '0'; sbta_valid <= '0'; stall <= '0'; illegal <= '0';
+    dbpu_mode <= "00";
 
-    if (mem_mode_ex(3) = '0' and rd_addr_ex /= "00000"                              -- RAL hazard
+    if dbta_valid = '1' then
+      imm_to_alu <= '1';
+    elsif (mem_mode_ex(3) = '0' and rd_addr_ex /= "00000"                              -- RAL hazard
         and (rd_addr_ex = ir(19 downto 15) or rd_addr_ex = ir(24 downto 20))) then
       stall <= '1'; imm_to_alu <= '1';
     elsif opcode = "0010111" or opcode = "0110111" then
@@ -31,10 +34,12 @@ begin
     elsif opcode = "1101111" then
       -- J-type
       rd_addr  <= ir(11 downto 7); sel_bta <= '1';
+      dbpu_mode(0) <= '1'; sbta_valid <= '1';
       imm <= (imm'high downto 20 => ir(31)) & ir(19 downto 12) & ir(20) & ir(30 downto 21) & '0';
     elsif opcode = "1100011" and signed(funct3) < 2 then
       -- B-type
       rs1_addr <= ir(19 downto 15); rs2_addr <= ir(24 downto 20); sel_bta <= '1';
+      dbpu_mode(1) <= '1';
       imm <= (imm'high downto 12 => ir(31)) & ir(7) & ir(30 downto 25) & ir(11 downto 8) & '0';
       -- alu_mode <= "111" & funct3(0) when unsigned(funct3) < 2 else
       --             std_logic_vector(to_unsigned(unsigned(funct3)+5, 4));
@@ -57,6 +62,7 @@ begin
       or (opcode = "1100111" and funct3 = "000") then
       -- I-type
       rs1_addr <= ir(19 downto 15); rd_addr <= ir(11 downto 7); imm_to_alu <= '1';
+      dbpu_mode <= opcode(6 downto 5);
       imm <= (imm'high downto 7 => '0') & ir(26 downto 20) when opcode(4) = '1' and funct3(1 downto 0) = "01" else
              (imm'high downto 11 => ir(31)) & ir(30 downto 20);
       alu_mode <= (others => '0') when opcode(4) = '0' else

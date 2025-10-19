@@ -13,7 +13,7 @@ entity dec is
         rd_addr:                out std_logic_vector(ADDR_WIDTH-1 downto 0);
         imm:                    out std_logic_vector(DATA_WIDTH-1 downto 0);
         alu_mode:               out std_logic_vector(3 downto 0);
-        -- dbpu_mode:              out std_logic_vector(1 downto 0);
+        dbpu_mode:              out std_logic_vector(1 downto 0);
         mem_mode:               out std_logic_vector(3 downto 0);
         dbta_valid:             in std_logic;
         imm_to_alu, sel_bta:    out std_logic;

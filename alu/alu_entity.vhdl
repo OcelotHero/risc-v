@@ -7,5 +7,5 @@ entity alu is
   port( rs1, rs2: in  std_logic_vector(DATA_WIDTH-1 downto 0);
         alu_mode: in  std_logic_vector(3 downto 0);
         rd:       out std_logic_vector(DATA_WIDTH-1 downto 0);
-        logical:  out std_logic);
+        comp:     out std_logic);
 end entity alu;

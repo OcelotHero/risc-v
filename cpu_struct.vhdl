@@ -17,6 +17,7 @@ architecture struct of cpu is
   signal alu_mode_dc_u, alu_mode_ex:        std_logic_vector(3 downto 0);
   signal mem_mode_dc_u, mem_mode_ex:        std_logic_vector(3 downto 0);
   signal mem_mode_me:                       std_logic_vector(3 downto 0);
+  signal dbpu_mode_dc_u, dbpu_mode_ex:      std_logic_vector(1 downto 0);
   signal fwd_rs1_dc_u, fwd_rs2_dc_u:        std_logic_vector(1 downto 0);
   signal fwd_rs1_ex, fwd_rs2_ex:            std_logic_vector(1 downto 0);
   signal fwd_selsd_dc_u:                    std_logic;
@@ -32,7 +33,6 @@ begin
   pc_mux:
     pc_sel_u <= imm_bta_sel_dc_u when sbta_valid_dc_u = '1' else
                 dbta_ex_u when dbta_valid_ex_u = '1' else
-                -- (others => '0');
                 std_logic_vector(to_unsigned(to_integer(unsigned(pc_if))+4, INSTR_WIDTH));
 
   reg_if:
@@ -66,7 +66,7 @@ begin
       rd_addr => rd_addr_dc_u, rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
       mem_mode => mem_mode_dc_u, mem_mode_ex => mem_mode_ex,
       fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
-      alu_mode => alu_mode_dc_u, imm => imm_dc_u,
+      alu_mode => alu_mode_dc_u, dbpu_mode => dbpu_mode_dc_u, imm => imm_dc_u,
       imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
       sbta_valid => sbta_valid_dc_u, dbta_valid => dbta_valid_ex_u);
 
@@ -91,14 +91,14 @@ begin
       clk => clk, res_n => res_n,
       d(0) => rs1_dc_u, d(1) => rs2_dc_u, d(2) => imm_bta_sel_dc_u, d(3) => pc_dc,
       d(4) => (31 downto 27 => rd_addr_dc_u, 26 downto 23 => alu_mode_dc_u,
-               22 downto 19 => mem_mode_dc_u, 18 downto 17 => fwd_rs1_dc_u,
-               16 downto 15 => fwd_rs2_dc_u, 14 => fwd_selsd_dc_u,
-               13 => imm_to_alu_dc_u, others => '0'),
+               22 downto 19 => mem_mode_dc_u, 18 downto 17 => dbpu_mode_dc_u,
+               16 downto 15 => fwd_rs1_dc_u, 14 downto 13 => fwd_rs2_dc_u,
+               12 => fwd_selsd_dc_u, 11 => imm_to_alu_dc_u, others => '0'),
       q(0) => rs1_ex, q(1) => rs2_ex, q(2) => imm_bta_ex, q(3) => pc_ex,
       q(4)(31 downto 27) => rd_addr_ex, q(4)(26 downto 23) => alu_mode_ex,
-      q(4)(22 downto 19) => mem_mode_ex, q(4)(18 downto 17) => fwd_rs1_ex,
-      q(4)(16 downto 15) => fwd_rs2_ex, q(4)(14) => fwd_selsd_ex,
-      q(4)(13) => imm_to_alu_ex);
+      q(4)(22 downto 19) => mem_mode_ex, q(4)(18 downto 17) => dbpu_mode_ex,
+      q(4)(16 downto 15) => fwd_rs1_ex, q(4)(14 downto 13) => fwd_rs2_ex,
+      q(4)(12) => fwd_selsd_ex, q(4)(11) => imm_to_alu_ex);
 
   rs1_mux_ex:
     rs1_sel_ex_u <= alu_out_me when fwd_rs1_ex = "01" else
@@ -118,11 +118,17 @@ begin
     generic map (DATA_WIDTH => DATA_WIDTH)
     port map (
       alu_mode => alu_mode_ex, rs1 => rs1_sel_ex_u, rs2 => rs2_imm_sel_ex_u,
-      rd => alu_out_ex_u, logical => alu_comp_out_ex_u);
+      rd => alu_out_ex_u, comp => alu_comp_out_ex_u);
 
-  alu_pc_sel_mux:
+  alu_pc_sel_mux_ex:
     alu_pc_sel_ex_u <= alu_out_ex_u when sel_pc_ex_u = '0' else
                        std_logic_vector(to_unsigned(to_integer(unsigned(pc_ex))+4, DATA_WIDTH));
+
+  dbpu_ex:
+    entity work.dbpu
+    port map (
+      mode => dbpu_mode_ex, sbta => imm_bta_ex, dbta => alu_out_ex_u, bta => dbta_ex_u,
+      comp => alu_comp_out_ex_u, valid => dbta_valid_ex_u, sel_link => sel_pc_ex_u);
 
   reg_me:
     entity work.reg
