@@ -13,7 +13,7 @@ begin
       if ((unsigned(mode(2 downto 0)) > 2 and mode(2 downto 0) /= "111")
           or (mode(0) and n_addr(0)) = '1' or (mode(1) = '1' and n_addr(1 downto 0) /= "00")) then
         err_align <= '1';
-      else
+      elsif mode(2) = '0' then
         waddr <= n_addr(ADDR_WIDTH+1 downto 2);
         wdata <= std_logic_vector(shift_left(unsigned(sdata), 8*to_integer(unsigned(n_addr(1 downto 0)))));
         be <= "1111" when mode(1) = '1' else                                                  -- SW

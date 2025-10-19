@@ -5,7 +5,24 @@ architecture behav of gen_ram_be is
   type word_type is array (0 to NUM_BYTES - 1) of std_logic_vector(BYTE_WIDTH - 1 downto 0);
   type ram_type is array (0 to 2 ** ADDR_WIDTH - 1) of word_type;
 
-  signal ram       : ram_type := (others => (others => (others => '0')));
+  function word32_to_word_type(w : std_logic_vector(31 downto 0)) return word_type is
+    variable res : word_type;
+  begin
+    for i in 0 to 3 loop
+      res(3-i) := w(8*(i+1)-1 downto 8*i);
+    end loop;
+    return res;
+  end function;
+
+  signal ram       : ram_type := (
+      16#1000# => word32_to_word_type(x"05000000"),
+      16#1001# => word32_to_word_type(x"07000000"),
+      16#1002# => word32_to_word_type(x"2d000000"),
+      16#1003# => word32_to_word_type(x"0e000000"),
+      16#1004# => word32_to_word_type(x"02000000"),
+      16#1005# => word32_to_word_type(x"20000000"),
+      others => (others => (others => '0'))
+  );
   signal rdata_int : word_type;
   signal raddr_reg : std_logic_vector(ADDR_WIDTH - 1 downto 0) := (others => '0');
 begin
