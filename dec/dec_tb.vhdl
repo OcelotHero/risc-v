@@ -18,7 +18,7 @@ architecture behav of dec_tb is
   signal imm_dc_u:                      std_logic_vector(DATA_WIDTH-1 downto 0);
   signal alu_mode_dc_u:                 std_logic_vector(3 downto 0);
   signal mem_mode_dc_u:                 std_logic_vector(3 downto 0);
-  signal dtba_valid_ex_u:               std_logic;
+  signal dbta_valid_ex_u:               std_logic;
   signal imm_to_alu_dc_u, sel_bta_dc_u: std_logic;
   signal sbta_valid_dc_u, stall_dc_u:   std_logic;
   signal illegal_dc_u:                  std_logic;
@@ -29,14 +29,12 @@ begin
     generic map (DATA_WIDTH => DATA_WIDTH, ADDR_WIDTH => ADDR_WIDTH)
     port map (
       ir => ir_dc,
-      rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
-      mem_mode_ex => mem_mode_ex, dtba_valid => dtba_valid_ex_u,
-      fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
       rs1_addr => rs1_addr_dc_u, rs2_addr => rs2_addr_dc_u, rd_addr => rd_addr_dc_u,
-      imm => imm_dc_u,
-      alu_mode => alu_mode_dc_u, mem_mode => mem_mode_dc_u,
-      imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
-      sbta_valid => sbta_valid_dc_u, stall => stall_dc_u,
+      rd_addr_me => rd_addr_me, rd_addr_ex => rd_addr_ex,
+      fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
+      mem_mode => mem_mode_dc_u, mem_mode_ex => mem_mode_ex, alu_mode => alu_mode_dc_u,
+      imm => imm_dc_u, imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
+      sbta_valid => sbta_valid_dc_u, dbta_valid => dbta_valid_ex_u, stall => stall_dc_u,
       illegal => illegal_dc_u);
 
   test: process is
@@ -61,7 +59,7 @@ begin
   begin
     -- Initialize inputs
     rd_addr_me <= (others => '0'); rd_addr_ex <= (others => '0');
-    mem_mode_ex <= (others => '0'); dtba_valid_ex_u <= '0';
+    mem_mode_ex <= (others => '0'); dbta_valid_ex_u <= '0';
 
     -- Valid instructions check
     ir_dc <= (others => '0');
@@ -73,7 +71,7 @@ begin
           or i = 2#0000011# or i = 2#0010011# or i = 2#1100111# or i = 2#0100011#) then
         assert illegal_dc_u = '0' report "Opcode=" & to_string(to_unsigned(i, 7)) & ": illegal incorrectly set" severity error;
       else
-        assert_signals("Opcode=" & to_string(to_unsigned(i, 7)), "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("Opcode=" & to_string(to_unsigned(i, 7)), "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       end if;
     end loop;
 
@@ -170,7 +168,7 @@ begin
       ir_dc(14 downto 12) <= std_logic_vector(to_unsigned(i, 3));
       wait for 10 ps;
       if i = 2 or i = 3 then
-        assert_signals("B-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("B-type", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       else
         assert_signals("B-type", '1' & ir_dc(12) & ir_dc(14 downto 13), "1111", 0, 0, 0, imm, '0', '1', '0');
       end if;
@@ -196,7 +194,7 @@ begin
       if i = 1 or i = 2 then
         assert_signals("S-type", "0000", "1" & std_logic_vector(to_unsigned(i, 3)), 0, 0, 0, imm, '1', '0', '0');
       else
-        assert_signals("S-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("S-type", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       end if;
     end loop;
 
@@ -256,7 +254,7 @@ begin
       if i = 0 or i = 5 then
         assert_signals("R-type", "1" & ir_dc(14 downto 12), "1111", 0, 0, 0, imm, '0', '0', '0');
       else
-        assert_signals("R-type", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("R-type", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       end if;
     end loop;
 
@@ -269,7 +267,7 @@ begin
       if i < 3 or i = 4 or i = 5 then
         assert_signals("I-type Load", "0000", "0" & std_logic_vector(to_unsigned(i, 3)), 0, 0, 0, imm, '1', '0', '0');
       else
-        assert_signals("I-type Load", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("I-type Load", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       end if;
     end loop;
 
@@ -305,7 +303,7 @@ begin
       wait for 10 ps;
       if i = 1 then
         imm(10) := '0';
-        assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       elsif i = 5 then
         imm(10) := '0';
         assert_signals("I-type ALU immediate", "1101", "1111", 0, 0, 0, imm, '1', '0', '0');
@@ -325,7 +323,7 @@ begin
         assert_signals("I-type ALU immediate", "0101", "1111", 0, 0, 0, imm, '1', '0', '0');
       else
         imm := (others => '0');
-        assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("I-type ALU immediate", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       end if;
     end loop;
 
@@ -355,7 +353,7 @@ begin
       if i = 0 then
         assert_signals("I-type JALR", "0000", "1111", 0, 0, 0, imm, '1', '0', '0');
       else
-        assert_signals("I-type JALR", "0000", "1111", 0, 0, 0, imm, '0', '0', '1');
+        assert_signals("I-type JALR", "0000", "1111", 0, 0, 0, imm, '1', '0', '1');
       end if;
     end loop;
 

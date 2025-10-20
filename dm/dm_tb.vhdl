@@ -6,13 +6,13 @@ entity dm_tb is
 end entity dm_tb;
 
 architecture behav of dm_tb is
-  constant ADDR_WIDTH: integer := 8;
+  constant ADDR_WIDTH: integer := 16;
   constant DATA_WIDTH: integer := 32;
 
   signal mem_addr_ex, mem_addr_me:    std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
   signal mem_sdata_me, mem_ldata_me:  std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
   signal mem_mode_me:                 std_logic_vector(3 downto 0)            := (others => '0');
-  signal illegal_op_me_u, clk, res_n: std_logic;
+  signal err_align_me_u, clk, res_n: std_logic;
 begin
 
   osc:
@@ -26,7 +26,7 @@ begin
     port map (
       clk => clk, addr => mem_addr_ex, n_addr => mem_addr_me,
       sdata => mem_sdata_me, ldata => mem_ldata_me,
-      mode => mem_mode_me, illegal_mode => illegal_op_me_u);
+      mode => mem_mode_me, err_align => err_align_me_u);
 
   test: process
   begin
