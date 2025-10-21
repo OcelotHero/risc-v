@@ -15,7 +15,7 @@ entity dec is
         alu_mode:               out std_logic_vector(3 downto 0);
         dbpu_mode:              out std_logic_vector(1 downto 0);
         mem_mode:               out std_logic_vector(3 downto 0);
-        dbta_valid:             in std_logic;
+        cancel:                 in std_logic;
         imm_to_alu, sel_bta:    out std_logic;
         sbta_valid, stall:      out std_logic;
         illegal:                out std_logic);

@@ -8,7 +8,7 @@ begin
   fwd_selsd <= '1' when ir(6 downto 0) = "0100011" and mem_mode_ex(2) = '0'
                 and rd_addr_ex /= "00000" and rd_addr_ex = ir(24 downto 20) else '0';
 
-  decode: process(ir, rd_addr_ex, mem_mode_ex, dbta_valid)
+  decode: process(ir, rd_addr_ex, mem_mode_ex, cancel)
     variable opcode: std_logic_vector(6 downto 0);
     variable funct3: std_logic_vector(2 downto 0);
     variable funct7: std_logic_vector(6 downto 0);
@@ -21,7 +21,7 @@ begin
     imm_to_alu <= '0'; sel_bta <= '0'; sbta_valid <= '0'; stall <= '0'; illegal <= '0';
     dbpu_mode <= "00";
 
-    if dbta_valid = '1' then
+    if cancel = '1' then
       imm_to_alu <= '1';
     elsif (mem_mode_ex(3) = '0' and rd_addr_ex /= "00000"                              -- RAL hazard
         and (rd_addr_ex = ir(19 downto 15) or rd_addr_ex = ir(24 downto 20))) then
