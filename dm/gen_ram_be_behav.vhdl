@@ -21,6 +21,7 @@ architecture behav of gen_ram_be is
       16#1003# => word32_to_word_type(x"0e000000"),
       16#1004# => word32_to_word_type(x"02000000"),
       16#1005# => word32_to_word_type(x"20000000"),
+      16#1006# => word32_to_word_type(x"04000000"),
       others => (others => (others => '0'))
   );
   signal rdata_int : word_type;

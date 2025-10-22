@@ -1,8 +1,21 @@
 architecture struct of cpu is
+  function add_pc(v: std_logic_vector; offset: positive range 2 to 4) return std_logic_vector is
+    constant WIDTH : integer := v'length;
+  begin
+    return std_logic_vector(to_unsigned(to_integer(unsigned(v))+offset, WIDTH));
+  end function add_pc;
+
+  function add_pc(v: std_logic_vector; w: std_logic_vector) return std_logic_vector is
+    constant WIDTH : integer := v'length;
+  begin
+    return std_logic_vector(unsigned(v) + unsigned(w));
+  end function add_pc;
+
   signal pc_if, pc_sel_u, pc_dc, pc_ex:     std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal ir_if_u, ir_sel_if_u, ir_dc:       std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal dbta_ex_u:                         std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal pc_target_if:                      std_logic_vector(INSTR_WIDTH-1 downto 0);
+  signal wpc_sel_if_u, wtargetpc_sel_if_u:  std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal rs1_addr_dc_u, rs2_addr_dc_u:      std_logic_vector(ADDR_WIDTH-1 downto 0);
   signal rd_addr_dc_u, rd_addr_ex:          std_logic_vector(ADDR_WIDTH-1 downto 0);
   signal rd_addr_me, rd_addr_wb:            std_logic_vector(ADDR_WIDTH-1 downto 0);
@@ -35,11 +48,9 @@ begin
 
   pc_mux:
     pc_sel_u <= pc_target_if      when hit_if = '1' else
-                imm_bta_sel_dc_u  when (sbta_valid_dc_u or pred_dc_u) = '1' else
-                dbta_ex_u         when (dbta_valid_ex_u and not (hit_ex and alu_comp_out_ex_u) and not pred_ex) = '1' else
-                std_logic_vector(to_unsigned(to_integer(unsigned(pc_dc))+4, INSTR_WIDTH))
-                                  when (pred_ex and not alu_comp_out_ex_u) = '1' else
-                std_logic_vector(to_unsigned(to_integer(unsigned(pc_if))+4, INSTR_WIDTH));
+                imm_bta_sel_dc_u  when ((sbta_valid_dc_u and not hit_dc) or pred_dc_u) = '1' else
+                dbta_ex_u         when dbta_valid_ex_u else
+                add_pc(pc_if, 4);
 
   reg_if:
     entity work.reg
@@ -53,7 +64,7 @@ begin
     port map (pc => pc_if(PC_DEPTH+1 downto 0), instr => ir_if_u);
 
   ir_mux_if:
-    ir_sel_if_u <= x"00000013" when (sbta_valid_dc_u or (((dbta_valid_ex_u or alu_comp_out_ex_u) xor hit_ex) xor pred_ex)) = '1' else ir_if_u;
+    ir_sel_if_u <= x"00000013" when ((sbta_valid_dc_u and not hit_dc) or dbta_valid_ex_u) else ir_if_u;
 
   btc_if:
     entity work.btc
@@ -61,8 +72,14 @@ begin
     port map (
       clk => clk, res_n => res_n, stall => stall_dc_u,
       rpc => pc_sel_u, rtarget => pc_target_if, hit => hit_if,
-      wpc => pc_ex, wtarget => dbta_ex_u,
-      wena => and (dbpu_mode_ex xnor "10"), taken => alu_comp_out_ex_u);
+      wpc => wpc_sel_if_u, wtarget => wtargetpc_sel_if_u,
+      wena => dbta_valid_ex_u or sbta_valid_dc_u, taken => alu_comp_out_ex_u or sbta_valid_dc_u);
+
+  wpc_mux_if:
+    wpc_sel_if_u <= pc_dc when sbta_valid_dc_u else pc_ex;
+
+  wtargetpc_mux_if:
+    wtargetpc_sel_if_u <= imm_bta_sel_dc_u when sbta_valid_dc_u else dbta_ex_u;
 
   reg_dc:
     entity work.reg
@@ -83,7 +100,7 @@ begin
       fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
       alu_mode => alu_mode_dc_u, dbpu_mode => dbpu_mode_dc_u, imm => imm_dc_u,
       imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
-      sbta_valid => sbta_valid_dc_u, cancel => (dbta_valid_ex_u or alu_comp_out_ex_u) xor hit_ex);
+      sbta_valid => sbta_valid_dc_u, cancel => dbta_valid_ex_u);
 
   rf_dc:
     entity work.rf
@@ -93,11 +110,8 @@ begin
       rs1_addr => rs1_addr_dc_u, rs2_addr => rs2_addr_dc_u, rd_addr => rd_addr_wb,
       rs1 => rs1_dc_u, rs2 => rs2_dc_u, rd => mem_out_wb);
 
-  bta_calc_dc:
-    bta_dc_u <= std_logic_vector(unsigned(imm_dc_u) + unsigned(pc_dc));
-
   imm_bta_mux_dc:
-    imm_bta_sel_dc_u <= imm_dc_u when sel_bta_dc_u = '0' else bta_dc_u;
+    imm_bta_sel_dc_u <= imm_dc_u when sel_bta_dc_u = '0' else add_pc(imm_dc_u, pc_dc);
 
   bpb_dc:
     entity work.bpb
@@ -146,14 +160,15 @@ begin
       rd => alu_out_ex_u, comp => alu_comp_out_ex_u);
 
   alu_pc_sel_mux_ex:
-    alu_pc_sel_ex_u <= alu_out_ex_u when sel_pc_ex_u = '0' else
-                       std_logic_vector(to_unsigned(to_integer(unsigned(pc_ex))+4, DATA_WIDTH));
+    alu_pc_sel_ex_u <= alu_out_ex_u when sel_pc_ex_u = '0' else add_pc(pc_ex, 4);
 
   dbpu_ex:
     entity work.dbpu
     port map (
-      mode => dbpu_mode_ex, sbta => imm_bta_ex, dbta => alu_out_ex_u, bta => dbta_ex_u,
-      comp => alu_comp_out_ex_u, valid => dbta_valid_ex_u, sel_link => sel_pc_ex_u);
+      mode => dbpu_mode_ex, sbta => imm_bta_ex, dbta => alu_out_ex_u,
+      pc_n => add_pc(pc_ex, 4), pc_target => pc_dc,
+      hit => hit_ex, comp => alu_comp_out_ex_u,
+      valid => dbta_valid_ex_u, sel_link => sel_pc_ex_u, bta => dbta_ex_u);
 
   reg_me:
     entity work.reg

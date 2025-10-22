@@ -7,6 +7,7 @@ end entity cpu_tb;
 
 architecture behav of cpu_tb is
   signal clk, res_n: std_logic;
+  signal count: natural range 0 to 5 := 0;
 begin
 
   osc:

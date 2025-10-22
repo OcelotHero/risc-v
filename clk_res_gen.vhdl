@@ -2,8 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 
 entity clk_res_gen is
-  generic(T: time := 20 ns);
-  port(clk, res_n: out std_logic);
+  generic (T: time := 20 ns);
+  port (clk, res_n: out std_logic);
 end entity clk_res_gen;
 
 architecture behav of clk_res_gen is
