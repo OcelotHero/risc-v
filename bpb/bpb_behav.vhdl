@@ -18,7 +18,9 @@ begin
           exit;
         end if;
       end loop;
-      raddr_reg <= raddr;
+      if stall = '0' then
+        raddr_reg <= raddr;
+      end if;
     end if;
   end process;
 end architecture behav;
