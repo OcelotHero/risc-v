@@ -10,7 +10,8 @@ begin
   -- bta       <= dbta when mode = "11" and predict = '0' else
   --              sbta when mode = "10" and predict = '0' and comp = '1' else
   --              pc_n;
-  valid     <= mode(1) and ((mode(0) and (predict nand target_eq)) or (comp xor predict));
+  valid     <= mode(1) and ((mode(0) and (predict nand target_eq))
+                            or (not mode(0) and (comp xor predict)));
   bta       <= dbta when mode = "11" else
                sbta when comp or mode(0) else
                pc_n;

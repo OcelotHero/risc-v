@@ -13,7 +13,7 @@ architecture struct of cpu is
 
   signal pc_if, pc_sel_u, pc_dc, pc_ex:     std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal ir_if_u, ir_sel_if_u, ir_dc:       std_logic_vector(INSTR_WIDTH-1 downto 0);
-  signal dbta_ex_u:                         std_logic_vector(INSTR_WIDTH-1 downto 0);
+  signal pc_ras_if_u, dbta_ex_u:            std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal pc_target_if, ir_target_if:        std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal rs1_addr_dc_u, rs2_addr_dc_u:      std_logic_vector(ADDR_WIDTH-1 downto 0);
   signal rd_addr_dc_u, rd_addr_ex:          std_logic_vector(ADDR_WIDTH-1 downto 0);
@@ -35,6 +35,7 @@ architecture struct of cpu is
   signal fwd_rs1_ex, fwd_rs2_ex:            std_logic_vector(1 downto 0);
   signal fwd_selsd_dc_u:                    std_logic;
   signal fwd_selsd_ex, fwd_selsd_me:        std_logic;
+  signal ras_empty_if:                      std_logic := '1';
   signal hit_if, pred_if:                   std_logic := '0';
   signal alu_comp_out_ex_u, sel_pc_ex_u:    std_logic := '0';
   signal pred_if_u, pred_dc, pred_ex:       std_logic := '0';
@@ -47,7 +48,8 @@ architecture struct of cpu is
 begin
 
   pc_mux:
-    pc_sel_u <= pc_target_if            when pred_if_u else
+    pc_sel_u <= pc_ras_if_u             when ir_sel_if_u = x"00008067" and ras_empty_if = '0' else -- ret ras
+                pc_target_if            when pred_if_u else
                 imm_bta_sel_dc_u        when sbta_valid_dc_u and not pred_dc else
                 dbta_ex_u               when dbta_valid_ex_u else
                 add_pc(pc_target_if, 4) when ir_if_u(6 downto 0) = "1101111" and hit_if = '1' else  -- jal fold
@@ -85,9 +87,19 @@ begin
       raddr => pc_sel_u(K_BIT+1 downto 2), waddr => pc_ex(K_BIT+1 downto 2),
       wena => and (dbpu_mode_ex xnor "10"), taken => alu_comp_out_ex_u);
 
+  ras_if:
+    entity work.cs
+    generic map (DATA_WIDTH => INSTR_WIDTH)
+    port map (
+      clk => clk, res_n => res_n, full => open, empty => ras_empty_if, clr => '0',
+      push => dbpu_mode_dc_u(0) and and (rd_addr_dc_u xnor "00001") and not dbta_valid_ex_u,
+      pop => and (ir_dc xnor x"00008067") and not dbta_valid_ex_u,
+      wdata => add_pc(pc_dc, 4), rdata => pc_ras_if_u);
+
   predict_if:
-    pred_if_u <= hit_if and (pred_if or (and (ir_sel_if_u(6 downto 0) xnor "1100111")
-                                         and and (ir_sel_if_u(14 downto 12) xnor "000")));
+    pred_if_u <= (and (ir_sel_if_u xnor x"00008067") and not ras_empty_if)
+                  or (hit_if and (pred_if or (and (ir_sel_if_u(6 downto 0) xnor "1100111")
+                      and and (ir_sel_if_u(14 downto 12) xnor "000"))));
 
   reg_dc:
     entity work.reg

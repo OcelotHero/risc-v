@@ -43,4 +43,7 @@ view:
 
 clean:
 	@echo "Removing generated files"
-	@rm -rf *.cf */*.cf *.ghw */*.ghw
+	@rm -rf *.cf */*.cf
+
+fclean: clean
+	@rm -rf *.ghw */*.ghw
