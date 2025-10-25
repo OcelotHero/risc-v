@@ -11,7 +11,13 @@ architecture struct of cpu is
     return std_logic_vector(unsigned(v) + unsigned(w));
   end function add_pc;
 
-  signal pc_if, pc_sel_u, pc_dc, pc_ex:     std_logic_vector(INSTR_WIDTH-1 downto 0);
+  function pc_offset(is_c: std_logic := '0') return integer is
+  begin
+    if is_c = '1' then return 2; else return 4; end if;
+  end function pc_offset;
+
+  signal pc_sel_u, pc_if, pc_if_u:          std_logic_vector(INSTR_WIDTH-1 downto 0) := (others => '0');
+  signal pc_dc, pc_ex, im_if_u:             std_logic_vector(INSTR_WIDTH-1 downto 0) := (others => '0');
   signal ir_if_u, ir_sel_if_u, ir_dc:       std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal pc_ras_if_u, dbta_ex_u:            std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal pc_target_if, ir_target_if:        std_logic_vector(INSTR_WIDTH-1 downto 0);
@@ -37,13 +43,15 @@ architecture struct of cpu is
   signal fwd_selsd_ex, fwd_selsd_me:        std_logic;
   signal ras_empty_if:                      std_logic := '1';
   signal hit_if, pred_if:                   std_logic := '0';
+  signal is_c_if_u, is_c_dc, is_c_ex:       std_logic := '0';
   signal alu_comp_out_ex_u, sel_pc_ex_u:    std_logic := '0';
   signal pred_if_u, pred_dc, pred_ex:       std_logic := '0';
   signal imm_to_alu_dc_u, imm_to_alu_ex:    std_logic;
   signal sbta_valid_dc_u, sbta_valid_ex:    std_logic;
   signal dbta_valid_ex_u:                   std_logic;
   signal stall_dc_u, sel_bta_dc_u:          std_logic;
-  signal illegal_dc_u, err_align_me_u:      std_logic;
+  signal illegal_if_u, illegal_dc_u:        std_logic;
+  signal err_align_me_u:                    std_logic;
 
 begin
 
@@ -52,8 +60,9 @@ begin
                 pc_target_if            when pred_if_u else
                 imm_bta_sel_dc_u        when sbta_valid_dc_u and not pred_dc else
                 dbta_ex_u               when dbta_valid_ex_u else
-                add_pc(pc_target_if, 4) when ir_if_u(6 downto 0) = "1101111" and hit_if = '1' else  -- jal fold
-                add_pc(pc_if, 4);
+                add_pc(pc_target_if, pc_offset(is_c_if_u))
+                                        when ir_if_u(6 downto 0) = "1101111" and hit_if = '1' else  -- jal fold
+                add_pc(pc_if, pc_offset(is_c_if_u));
 
   reg_if:
     entity work.reg
@@ -62,9 +71,18 @@ begin
       clk => clk, res_n => res_n, stall => stall_dc_u,
       d(0) => pc_sel_u, q(0) => pc_if);
 
+  pc_mux_if:
+    pc_if_u <= add_pc(pc_if, 2) when pc_if(1) = '1' else pc_if;
+
   im_if:
     entity work.im
-    port map (pc => pc_if(PC_DEPTH+1 downto 0), instr => ir_if_u);
+    port map (pc => pc_if_u(PC_DEPTH+1 downto 0), instr => im_if_u);
+
+  interp_if:
+    entity work.interp
+    generic map (XLEN => DATA_WIDTH)
+    port map (clk => clk, res_n => res_n, stall => stall_dc_u, illegal => illegal_if_u,
+              pc => pc_if, ir => im_if_u, ir_n => ir_if_u, is_c => is_c_if_u);
 
   ir_mux_if:
     ir_sel_if_u <= x"00000013"  when (sbta_valid_dc_u and not pred_dc) or dbta_valid_ex_u else
@@ -94,7 +112,7 @@ begin
       clk => clk, res_n => res_n, full => open, empty => ras_empty_if, clr => '0',
       push => dbpu_mode_dc_u(0) and and (rd_addr_dc_u xnor "00001") and not dbta_valid_ex_u,
       pop => and (ir_dc xnor x"00008067") and not dbta_valid_ex_u,
-      wdata => add_pc(pc_dc, 4), rdata => pc_ras_if_u);
+      wdata => add_pc(pc_dc, pc_offset(is_c_dc)), rdata => pc_ras_if_u);
 
   predict_if:
     pred_if_u <= (and (ir_sel_if_u xnor x"00008067") and not ras_empty_if)
@@ -106,8 +124,9 @@ begin
     generic map (DATA_WIDTH => INSTR_WIDTH, N_REG => 3)
     port map (
       clk => clk, res_n => res_n, stall => stall_dc_u,
-      d(0) => ir_sel_if_u, d(1) => pc_if, d(2) => (31 => pred_if_u, others => '0'),
-      q(0) => ir_dc, q(1) => pc_dc, q(2)(31) => pred_dc);
+      d(0) => ir_sel_if_u, d(1) => pc_if, d(2) => (31 => pred_if_u, 30 => is_c_if_u,
+      others => '0'),
+      q(0) => ir_dc, q(1) => pc_dc, q(2)(31) => pred_dc, q(2)(30) => is_c_dc);
 
   dec_dc:
     entity work.dec(behav2)
@@ -143,13 +162,13 @@ begin
                22 downto 19 => mem_mode_dc_u, 18 downto 17 => dbpu_mode_dc_u,
                16 downto 15 => fwd_rs1_dc_u, 14 downto 13 => fwd_rs2_dc_u,
                12 => fwd_selsd_dc_u, 11 => imm_to_alu_dc_u, 10 => pred_dc,
-               9 => sbta_valid_dc_u, others => '0'),
+               9 => sbta_valid_dc_u, 8 => is_c_dc, others => '0'),
       q(0) => rs1_ex, q(1) => rs2_ex, q(2) => imm_bta_ex, q(3) => pc_ex,
       q(4)(31 downto 27) => rd_addr_ex, q(4)(26 downto 23) => alu_mode_ex,
       q(4)(22 downto 19) => mem_mode_ex, q(4)(18 downto 17) => dbpu_mode_ex,
       q(4)(16 downto 15) => fwd_rs1_ex, q(4)(14 downto 13) => fwd_rs2_ex,
       q(4)(12) => fwd_selsd_ex, q(4)(11) => imm_to_alu_ex, q(4)(10) => pred_ex,
-      q(4)(9) => sbta_valid_ex);
+      q(4)(9) => sbta_valid_ex, q(4)(8) => is_c_ex);
 
   rs1_mux_ex:
     rs1_sel_ex_u <= alu_out_me when fwd_rs1_ex = "01" else
@@ -172,13 +191,13 @@ begin
       rd => alu_out_ex_u, comp => alu_comp_out_ex_u);
 
   alu_pc_sel_mux_ex:
-    alu_pc_sel_ex_u <= add_pc(pc_ex, 4) when sel_pc_ex_u else alu_out_ex_u;
+    alu_pc_sel_ex_u <= add_pc(pc_ex, pc_offset(is_c_ex)) when sel_pc_ex_u else alu_out_ex_u;
 
   dbpu_ex:
     entity work.dbpu
     port map (
       mode => dbpu_mode_ex, sbta => imm_bta_ex, dbta => alu_out_ex_u,
-      pc_n => add_pc(pc_ex, 4), pc_target => pc_dc,
+      pc_n => add_pc(pc_ex, pc_offset(is_c_ex)), pc_target => pc_dc,
       predict => pred_ex, comp => alu_comp_out_ex_u,
       valid => dbta_valid_ex_u, sel_link => sel_pc_ex_u, bta => dbta_ex_u);
 
