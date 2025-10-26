@@ -69,7 +69,7 @@ begin
         ir(31 downto 28) <= (others => cir(12)); ir(7) <= cir(12);
       elsif funct3(2) = '0' then
         -- CI-type
-        if cir(14 downto 2) = "00000000000000000" then
+        if cir(14 downto 2) = "0000000000000" then
           -- c.nop
           illegal <= '0';
         elsif cir(11 downto 7) /= "00000" then

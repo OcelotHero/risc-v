@@ -16,8 +16,8 @@ architecture struct of cpu is
     if is_c = '1' then return 2; else return 4; end if;
   end function pc_offset;
 
-  signal pc_sel_u, pc_if, pc_if_u:          std_logic_vector(INSTR_WIDTH-1 downto 0) := (others => '0');
-  signal pc_dc, pc_ex, im_if_u:             std_logic_vector(INSTR_WIDTH-1 downto 0) := (others => '0');
+  signal pc_sel_u, pc_if, pc_dc, pc_ex:     std_logic_vector(INSTR_WIDTH-1 downto 0) := (others => '0');
+  signal im_if_u, ir_exp_if_u:              std_logic_vector(INSTR_WIDTH-1 downto 0) := (others => '0');
   signal ir_if_u, ir_sel_if_u, ir_dc:       std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal pc_ras_if_u, dbta_ex_u:            std_logic_vector(INSTR_WIDTH-1 downto 0);
   signal pc_target_if, ir_target_if:        std_logic_vector(INSTR_WIDTH-1 downto 0);
@@ -71,18 +71,17 @@ begin
       clk => clk, res_n => res_n, stall => stall_dc_u,
       d(0) => pc_sel_u, q(0) => pc_if);
 
-  pc_mux_if:
-    pc_if_u <= add_pc(pc_if, 2) when pc_if(1) = '1' else pc_if;
-
   im_if:
-    entity work.im
-    port map (pc => pc_if_u(PC_DEPTH+1 downto 0), instr => im_if_u);
+    entity work.im(behav2)
+    port map (pc => pc_if(PC_DEPTH+1 downto 0), instr => im_if_u, is_c => is_c_if_u, stall => open);
 
-  interp_if:
-    entity work.interp
-    generic map (XLEN => DATA_WIDTH)
-    port map (clk => clk, res_n => res_n, stall => stall_dc_u, illegal => illegal_if_u,
-              pc => pc_if, ir => im_if_u, ir_n => ir_if_u, is_c => is_c_if_u);
+  exp_if:
+    entity work.exp
+    generic map (XLEN => INSTR_WIDTH)
+    port map (cir => im_if_u(15 downto 0), ir => ir_exp_if_u, illegal => illegal_if_u);
+
+  cir_ir_mux_if:
+    ir_if_u <= im_if_u when is_c_if_u = '0' else ir_exp_if_u;
 
   ir_mux_if:
     ir_sel_if_u <= x"00000013"  when (sbta_valid_dc_u and not pred_dc) or dbta_valid_ex_u else
@@ -102,7 +101,7 @@ begin
     generic map (K_BIT => K_BIT, PRED_WIDTH => PRED_WIDTH)
     port map (
       clk => clk, stall => stall_dc_u, pred => pred_if,
-      raddr => pc_sel_u(K_BIT+1 downto 2), waddr => pc_ex(K_BIT+1 downto 2),
+      raddr => pc_sel_u(K_BIT downto 1), waddr => pc_ex(K_BIT downto 1),
       wena => and (dbpu_mode_ex xnor "10"), taken => alu_comp_out_ex_u);
 
   ras_if:
