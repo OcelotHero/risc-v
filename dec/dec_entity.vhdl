@@ -18,5 +18,6 @@ entity dec is
         cancel:                 in std_logic;
         imm_to_alu, sel_bta:    out std_logic;
         sbta_valid, stall:      out std_logic;
+        ras_push, ras_pop:      out std_logic;
         illegal:                out std_logic);
 end entity dec;

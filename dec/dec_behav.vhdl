@@ -19,7 +19,7 @@ begin
     rs1_addr <= (others => '0'); rs2_addr <= (others => '0'); rd_addr <= (others => '0');
     imm <= (others => '0'); alu_mode <= (others => '0'); mem_mode <= (others => '1');
     imm_to_alu <= '0'; sel_bta <= '0'; sbta_valid <= '0'; stall <= '0'; illegal <= '0';
-    dbpu_mode <= "00";
+    dbpu_mode <= "00"; ras_push <= '0'; ras_pop <= '0';
 
     if cancel = '1' then
       imm_to_alu <= '1';
@@ -35,6 +35,7 @@ begin
       rd_addr  <= ir(11 downto 7); sel_bta <= '1';
       dbpu_mode(0) <= '1'; sbta_valid <= '1';
       imm <= (imm'high downto 20 => ir(31)) & ir(19 downto 12) & ir(20) & ir(30 downto 21) & '0';
+      ras_push <= '1' when ir(11 downto 7) = "00001" else '0';
     elsif opcode = "1100011" and signed(funct3) < 2 then
       -- B-type
       rs1_addr <= ir(19 downto 15); rs2_addr <= ir(24 downto 20); sel_bta <= '1';
@@ -57,6 +58,8 @@ begin
       alu_mode <= (others => '0') when opcode(4) = '0' else
                   funct7(5) & funct3 when funct3(1 downto 0) = "01" else '0' & funct3;
       mem_mode <= '0' & funct3 when opcode = "0000011" else (others => '1');
+      ras_push <= '1' when opcode(6) = '1' and ir(11 downto 7) = "00001" else '0';
+      ras_pop <= '1' when ir = x"00008067" else '0';
     elsif opcode = "0100011" and unsigned(funct3) < 3 then
       -- S-type
       rs1_addr <= ir(19 downto 15); rs2_addr <= ir(24 downto 20); imm_to_alu <= '1';

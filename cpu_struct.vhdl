@@ -39,6 +39,7 @@ architecture struct of cpu is
   signal dbpu_mode_dc_u, dbpu_mode_ex:      std_logic_vector(1 downto 0);
   signal fwd_rs1_dc_u, fwd_rs2_dc_u:        std_logic_vector(1 downto 0);
   signal fwd_rs1_ex, fwd_rs2_ex:            std_logic_vector(1 downto 0);
+  signal b_type_if:                         std_logic_vector(1 downto 0);
   signal fwd_selsd_dc_u:                    std_logic;
   signal fwd_selsd_ex, fwd_selsd_me:        std_logic;
   signal ras_empty_if:                      std_logic := '1';
@@ -46,6 +47,7 @@ architecture struct of cpu is
   signal is_c_if_u, is_c_dc, is_c_ex:       std_logic := '0';
   signal alu_comp_out_ex_u, sel_pc_ex_u:    std_logic := '0';
   signal pred_if_u, pred_dc, pred_ex:       std_logic := '0';
+  signal ras_push_dc_u, ras_pop_dc_u:       std_logic := '0';
   signal imm_to_alu_dc_u, imm_to_alu_ex:    std_logic;
   signal sbta_valid_dc_u, sbta_valid_ex:    std_logic;
   signal dbta_valid_ex_u:                   std_logic;
@@ -56,12 +58,11 @@ architecture struct of cpu is
 begin
 
   pc_mux:
-    pc_sel_u <= pc_ras_if_u             when ir_sel_if_u = x"00008067" and ras_empty_if = '0' else -- ret ras
+    pc_sel_u <= pc_ras_if_u             when ir_sel_if_u = x"00008067" and ras_empty_if = '0' else  -- ret ras
                 pc_target_if            when pred_if_u else
                 imm_bta_sel_dc_u        when sbta_valid_dc_u and not pred_dc else
                 dbta_ex_u               when dbta_valid_ex_u else
-                add_pc(pc_target_if, pc_offset(is_c_if_u))
-                                        when ir_if_u(6 downto 0) = "1101111" and hit_if = '1' else  -- jal fold
+                add_pc(pc_target_if, pc_offset(is_c_if_u))              when b_type_if = "01" else  -- jal fold
                 add_pc(pc_if, pc_offset(is_c_if_u));
 
   reg_if:
@@ -85,7 +86,7 @@ begin
 
   ir_mux_if:
     ir_sel_if_u <= x"00000013"  when (sbta_valid_dc_u and not pred_dc) or dbta_valid_ex_u else
-                   ir_target_if when ir_if_u(6 downto 0) = "1101111" and hit_if = '1' else      -- jal fold
+                   ir_target_if when b_type_if = "01" else                                        -- jal fold
                    ir_if_u;
 
   btc_if:
@@ -93,8 +94,8 @@ begin
     generic map (K_BIT => K_BIT, PC_WIDTH => INSTR_WIDTH)
     port map (
       clk => clk,  res_n => res_n, stall => stall_dc_u, taken => dbta_valid_ex_u or sbta_valid_ex,
-      rpc => pc_sel_u, rtarget => pc_target_if, rinstr => ir_target_if, hit => hit_if,
-      wpc => pc_ex, wtarget => dbta_ex_u, winstr => ir_if_u);
+      rpc => pc_sel_u, rtarget => pc_target_if, rinstr => ir_target_if, rtype => b_type_if, hit => hit_if,
+      wpc => pc_ex, wtarget => dbta_ex_u, winstr => ir_if_u, wtype => dbpu_mode_ex);
 
   bpb_if:
     entity work.bpb
@@ -109,14 +110,12 @@ begin
     generic map (DATA_WIDTH => INSTR_WIDTH)
     port map (
       clk => clk, res_n => res_n, full => open, empty => ras_empty_if, clr => '0',
-      push => dbpu_mode_dc_u(0) and and (rd_addr_dc_u xnor "00001") and not dbta_valid_ex_u,
-      pop => and (ir_dc xnor x"00008067") and not dbta_valid_ex_u,
+      push => ras_push_dc_u, pop => ras_pop_dc_u,
       wdata => add_pc(pc_dc, pc_offset(is_c_dc)), rdata => pc_ras_if_u);
 
   predict_if:
     pred_if_u <= (and (ir_sel_if_u xnor x"00008067") and not ras_empty_if)
-                  or (hit_if and (pred_if or (and (ir_sel_if_u(6 downto 0) xnor "1100111")
-                      and and (ir_sel_if_u(14 downto 12) xnor "000"))));
+                  or (hit_if and (pred_if or (and b_type_if)));
 
   reg_dc:
     entity work.reg
@@ -138,7 +137,8 @@ begin
       fwd_rs1 => fwd_rs1_dc_u, fwd_rs2 => fwd_rs2_dc_u, fwd_selsd => fwd_selsd_dc_u,
       alu_mode => alu_mode_dc_u, dbpu_mode => dbpu_mode_dc_u, imm => imm_dc_u,
       imm_to_alu => imm_to_alu_dc_u, sel_bta => sel_bta_dc_u,
-      sbta_valid => sbta_valid_dc_u, cancel => dbta_valid_ex_u);
+      sbta_valid => sbta_valid_dc_u, cancel => dbta_valid_ex_u,
+      ras_push => ras_push_dc_u, ras_pop => ras_pop_dc_u);
 
   rf_dc:
     entity work.rf

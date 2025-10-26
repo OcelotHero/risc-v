@@ -15,13 +15,13 @@ architecture behav of gen_ram_be is
   end function;
 
   signal ram       : ram_type := (
-      16#1000# => word32_to_word_type(x"05000000"),
+      16#1000# => word32_to_word_type(x"05000000"), -- array0
       16#1001# => word32_to_word_type(x"07000000"),
       16#1002# => word32_to_word_type(x"2d000000"),
       16#1003# => word32_to_word_type(x"0e000000"),
       16#1004# => word32_to_word_type(x"02000000"),
       16#1005# => word32_to_word_type(x"20000000"),
-      16#1006# => word32_to_word_type(x"04000000"),
+      16#1006# => word32_to_word_type(x"04000000"), -- array1
       16#1007# => word32_to_word_type(x"0d000000"),
       16#1008# => word32_to_word_type(x"1a000000"),
       16#1009# => word32_to_word_type(x"02000000"),

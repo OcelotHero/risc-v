@@ -9,7 +9,9 @@ entity btc is
         rpc, wpc:           in  std_logic_vector(PC_WIDTH-1 downto 0);
         wtarget:            in  std_logic_vector(PC_WIDTH-1 downto 0);
         winstr:             in  std_logic_vector(INSTR_WIDTH-1 downto 0);
+        wtype:              in  std_logic_vector(1 downto 0);
         rtarget:            out std_logic_vector(PC_WIDTH-1 downto 0);
         rinstr:             out std_logic_vector(INSTR_WIDTH-1 downto 0);
+        rtype:              out std_logic_vector(1 downto 0);
         hit:                out std_logic);
 end entity btc;
